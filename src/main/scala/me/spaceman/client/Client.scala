@@ -22,6 +22,9 @@ object ClientFactory {
       cmd.playerId = me
       cmd.guess = c
       cmd
+
+    def isFinished = update.endMessage!=null && update.endMessage.nonEmpty
+    def isOpen = !isFinished
   }
   trait Client {
     def onUpdateReceived(update:Context):GameCommand
@@ -32,10 +35,13 @@ object ClientFactory {
       new Client {
         val scanner = new Scanner(System.in)
         override def onUpdateReceived(update: Context): GameCommand =
-          print("Guess: ")
-          val line = scanner.nextLine()
-          update.makeGuess(line.head)
-      }      
+          if (update.isOpen)
+            print("Guess: ")
+            val line = scanner.nextLine()
+            update.makeGuess(line.head)
+          else
+            update.leave
+      }
 
     def simpleGuess(word:String) =
       val guessed = collection.mutable.HashSet.empty[Char]

@@ -169,7 +169,7 @@ object Server {
 
     def isOpen = state.isRunning
 
-    def wordToDisplay = state.wordToDisplay
+    def wordToDisplay = if (isLost) targetWord.targetWord else state.wordToDisplay
 
     def isWon = state.isWordRevealed
 
