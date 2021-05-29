@@ -87,7 +87,7 @@ object Server {
         }._2.toList
       allMatches.head
 
-    private var lastPattern = "".padTo(length,'_')
+    private var lastPattern = "".padTo(length, '_')
 
     override def onCorrectGuess(c: Char): Unit =
       super.onCorrectGuess(c)
@@ -115,7 +115,6 @@ object Server {
       case _ => wordPool.headOption.getOrElse(throw new RuntimeException("Wordpool empty"))
     }
   }
-
 
   class GameState(
                    private var guessesLeft: Int,
@@ -155,7 +154,6 @@ object Server {
       }
     }
   }
-
 
   class Connection(val in: Reader, val out: Writer, val socket: Socket)
 
