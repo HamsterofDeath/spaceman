@@ -95,9 +95,7 @@ object Server {
       val revealed = guessesInOrder.toSet
       val newPattern = display(mostEvilWord(c), revealed)
       wordPool.filterInPlace { word =>
-        newPattern.zip(word).forall { case (patternChar,testChar) =>
-          patternChar == testChar || (patternChar == '_' && !revealed(testChar))
-        }
+        Words.wordMatchesPattern(newPattern, word, revealed)
       }
       lastPattern = newPattern
 
@@ -117,6 +115,7 @@ object Server {
       case _ => wordPool.headOption.getOrElse(throw new RuntimeException("Wordpool empty"))
     }
   }
+
 
   class GameState(
                    private var guessesLeft: Int,
@@ -164,7 +163,7 @@ object Server {
 
   class OpenGame(val players: ArrayBuffer[Player], val gameId: Int) {
     private var currentPlayer = Option.empty[Player]
-    private val targetWord = new EvilWord(new Random().nextInt(15)+3)
+    private val targetWord = new EvilWord(Words.randomWordLength)
     private val state = new GameState(maxMoveCount, mutable.HashSet.empty, targetWord)
 
     def isOpen = state.isRunning

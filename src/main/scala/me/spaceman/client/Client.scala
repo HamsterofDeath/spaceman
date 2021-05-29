@@ -1,15 +1,20 @@
 package me.spaceman.client
 
+import me.spaceman.common.Words
 import me.spaceman.network.commands.Commands.{GameCommand, GameStart, Guess, JoinGame, LeaveGame, SpielZustand}
 import me.spaceman.server.Server
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.net.Socket
 import java.util.Scanner
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 object ClientFactory {
 
   class Context(update:SpielZustand, me:String) {
+    def pattern = update.wordToGuessDisplay
+
     def leave =
       val cmd = new LeaveGame
       cmd.gameID = update.gameID
@@ -23,7 +28,8 @@ object ClientFactory {
       cmd.guess = c
       cmd
 
-    def isFinished = update.endMessage!=null && update.endMessage.nonEmpty
+    def isFinished = update.endMessage != null && update.endMessage.nonEmpty
+
     def isOpen = !isFinished
   }
   trait Client {
@@ -31,6 +37,38 @@ object ClientFactory {
   }
 
   object Client {
+    def dictionaryClient =
+      new Client {
+        private lazy val dictionary = Words.loadAllWords
+        private val remaining = ArrayBuffer.empty[String]
+        private val guessed = mutable.HashSet.empty[Char]
+        private var needsInit = true
+        override def onUpdateReceived(update: Context): GameCommand =
+          if (update.isOpen)
+            if (needsInit) {
+              needsInit = false
+              remaining ++= dictionary(update.pattern.length)
+            }
+            val revealedChars = update.pattern.filter(_ != '_').toSet.map(_.toLower)
+            remaining.filterInPlace { word =>
+              Words.wordMatchesPattern(update.pattern, word, revealedChars)
+            }
+
+            val bestGuess =
+              remaining
+                .flatten
+                .toSet
+                .filterNot(guessed)
+                .maxBy { guessCandidate =>
+                remaining.count(!_.contains(guessCandidate))
+              }
+            guessed += bestGuess
+            update.makeGuess(bestGuess)
+          else
+            update.leave
+
+      }
+
     def consoleClient =
       new Client {
         val scanner = new Scanner(System.in)
