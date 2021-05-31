@@ -56,7 +56,8 @@ object Commands {
     var endMessage: String = null
     var kickedPlayer: String = null
 
-    override def toString = s"SpielZustand(gameID=$gameID, whoseTurn=$whoseTurn, messages=$messages, errorMessages=$errorMessages, status=$status, wordToGuessDisplay=$wordToGuessDisplay, initialCountdownValue=$initialCountdownValue, currentCountdown=$currentCountdown, endMessage=$endMessage, kickedPlayer=$kickedPlayer)"
+
+    override def toString = s"SpielZustand(gameID=$gameID,\nwhoseTurn=$whoseTurn,\nmessages=$messages,\nerrorMessages=$errorMessages,\nstatus=$status,\nwordToGuessDisplay=$wordToGuessDisplay,\ninitialCountdownValue=$initialCountdownValue,\ncurrentCountdown=$currentCountdown,\nendMessage=$endMessage,\nkickedPlayer=$kickedPlayer)"
   }
 
   type GameCommand = GameStart | JoinGame | Forfeit | LeaveGame | Guess

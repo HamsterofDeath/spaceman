@@ -163,6 +163,9 @@ object Server {
     private var currentPlayer = Option.empty[Player]
     private val targetWord = new EvilWord(Words.randomWordLength)
     private val state = new GameState(maxMoveCount, mutable.HashSet.empty, targetWord)
+    if (targetWord.isCorrect(' ')) {
+      targetWord.onCorrectGuess(' ')
+    }
 
     def isOpen = state.isRunning
 
