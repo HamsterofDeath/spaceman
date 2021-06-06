@@ -65,6 +65,25 @@ object Server {
     def mostEvilWord(pool: Traversable[String], guessesInOrder: List[Char], newGuess: Char): String
   }
 
+  object MaxAverageGroupSize extends EvilWordChooser {
+    override def mostEvilWord(pool: Traversable[String], guessesInOrder: List[Char], newGuess: Char): String =
+      val newRevealed = (mutable.HashSet.empty ++= guessesInOrder += newGuess).toSet
+      val groups =
+        pool.groupBy { candidate =>
+          display(candidate, newRevealed)
+        }
+      groups.maxBy { case (pattern, matches) =>
+        val unguessedLetters = matches.toSet.flatten
+        val numberOfGroups = unguessedLetters.map { testChar =>
+          val nextRevealed = newRevealed + testChar
+          matches.groupBy { candidate =>
+            display(candidate, nextRevealed)
+          }.values.map(_.size).sum
+        }.sum
+        (unguessedLetters.size * matches.size) / numberOfGroups.toDouble
+      }._2.head
+  }
+
   object SmartEvilWordChoooser extends EvilWordChooser {
     override def mostEvilWord(pool: Traversable[String], guessesInOrder: List[Char], newGuess: Char): String =
       val newRevealed = (mutable.HashSet.empty ++= guessesInOrder += newGuess).toSet
