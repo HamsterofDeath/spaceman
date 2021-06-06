@@ -68,12 +68,12 @@ object Server {
   object SmartEvilWordChoooser extends EvilWordChooser {
     override def mostEvilWord(pool: Traversable[String], guessesInOrder: List[Char], newGuess: Char): String =
       val newRevealed = (mutable.HashSet.empty ++= guessesInOrder += newGuess).toSet
-      val allMatches = pool
-        .groupBy { candidate =>
+      val allMatches =
+        pool.groupBy { candidate =>
           display(candidate, newRevealed)
-        }
-        .maxBy { case (_, options) =>
-          options.minBy(_.toSet.count(e => !newRevealed(e)))
+        }.maxBy { case (_, options) =>
+          val minimumUnguessedChars = options.minBy(_.toSet.count(e => !newRevealed(e)))
+          minimumUnguessedChars
         }._2.toList
       allMatches.head
   }
@@ -239,7 +239,7 @@ object Server {
   }
 
   private def handle(client: Connection, command: GameCommand) =
-    println(s"Incoming message from ${client.socket.getInetAddress}: $command")
+    println(s"Incoming message from ${client.socket.getInetAddress}:\n$command")
     runInOrder {
       val response = Try {
         command match {
