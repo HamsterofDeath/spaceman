@@ -1,7 +1,7 @@
 package me.spaceman.client
 
 import me.spaceman.common.Words
-import me.spaceman.network.commands.Commands.{GameCommand, GameStart, Guess, JoinGame, LeaveGame, SpielZustand}
+import me.spaceman.network.commands.Commands._
 import me.spaceman.server.Server
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
@@ -12,7 +12,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object ClientFactory {
 
-  class Context(update:SpielZustand, me:String) {
+  class Context(update: SpielZustand, me: String) {
     def pattern = update.wordToGuessDisplay
 
     def leave =
@@ -21,7 +21,7 @@ object ClientFactory {
       cmd.playerId = me
       cmd
 
-    def makeGuess(c:Char) =
+    def makeGuess(c: Char) =
       val cmd = new Guess
       cmd.gameId = update.gameID
       cmd.playerId = me
@@ -32,8 +32,9 @@ object ClientFactory {
 
     def isOpen = !isFinished
   }
+
   trait Client {
-    def onUpdateReceived(update:Context):GameCommand
+    def onUpdateReceived(update: Context): GameCommand
   }
 
   object Client {
@@ -43,6 +44,7 @@ object ClientFactory {
         private val remaining = ArrayBuffer.empty[String]
         private val guessed = mutable.HashSet.empty[Char]
         private var needsInit = true
+
         override def onUpdateReceived(update: Context): GameCommand =
           if (update.isOpen)
             if (needsInit) {
@@ -60,8 +62,8 @@ object ClientFactory {
                 .toSet
                 .filterNot(guessed)
                 .maxBy { guessCandidate =>
-                remaining.count(!_.contains(guessCandidate))
-              }
+                  remaining.count(!_.contains(guessCandidate))
+                }
             guessed += bestGuess
             update.makeGuess(bestGuess)
           else
@@ -72,6 +74,7 @@ object ClientFactory {
     def consoleClient =
       new Client {
         val scanner = new Scanner(System.in)
+
         override def onUpdateReceived(update: Context): GameCommand =
           if (update.isOpen)
             print("Guess: ")
@@ -81,7 +84,7 @@ object ClientFactory {
             update.leave
       }
 
-    def simpleGuess(word:String) =
+    def simpleGuess(word: String) =
       val guessed = collection.mutable.HashSet.empty[Char]
       new Client {
         override def onUpdateReceived(ctx: Context): GameCommand =
@@ -92,25 +95,28 @@ object ClientFactory {
               ctx.makeGuess(c)
             case _ => ctx.leave
           }
-    }
+      }
   }
 
-  def defaultClient(gameId:Int, targetIp:String) = {
+  def defaultClient(gameId: Int, targetIp: String) = {
     new GameClient(targetIp)
   }
 
   trait JoinMatch
-  sealed class NewGame(val gameId:Option[Int]) extends JoinMatch
-  sealed class JoinExistingGame(val gameId:Int)extends JoinMatch
-  class GameClient(targetIp:String) {
+
+  sealed class NewGame(val gameId: Option[Int]) extends JoinMatch
+
+  sealed class JoinExistingGame(val gameId: Int) extends JoinMatch
+
+  class GameClient(targetIp: String) {
     lazy val socket = new Socket(targetIp, Server.serverPort)
     lazy val oos = new ObjectOutputStream(socket.getOutputStream)
     lazy val ois = new ObjectInputStream(socket.getInputStream)
 
-    def runWith(where:JoinMatch, logic:Client) =
+    def runWith(where: JoinMatch, logic: Client) =
       val me = "Scala client"
       val cmd = where match {
-        case jg:JoinExistingGame =>
+        case jg: JoinExistingGame =>
           val cmd = new JoinGame
           cmd.gameID = jg.gameId
           cmd.playerId = me

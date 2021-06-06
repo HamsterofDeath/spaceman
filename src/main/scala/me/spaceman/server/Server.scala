@@ -56,17 +56,17 @@ object Server {
     override def isCorrect(char: Char): Boolean = target.exists(_.toLower == char.toLower)
   }
 
-  private def display(word: String, visible: Set[Char]) = word.map { c =>
-    if (visible(c.toLower)) c else '_'
-  }.mkString
+  private def display(word: String, visible: Set[Char]) =
+    word.map { c =>
+      if (visible(c.toLower)) c else '_'
+    }.mkString
 
   trait EvilWordChooser {
-    def mostEvilWord(pool: Traversable[String], guessesInOrder:List[Char], newGuess: Char):String
-
+    def mostEvilWord(pool: Traversable[String], guessesInOrder: List[Char], newGuess: Char): String
   }
 
   object SmartEvilWordChoooser extends EvilWordChooser {
-    override def mostEvilWord(pool: Traversable[String], guessesInOrder:List[Char], newGuess: Char): String =
+    override def mostEvilWord(pool: Traversable[String], guessesInOrder: List[Char], newGuess: Char): String =
       val newRevealed = (mutable.HashSet.empty ++= guessesInOrder += newGuess).toSet
       val allMatches = pool
         .groupBy { candidate =>
@@ -78,7 +78,7 @@ object Server {
       allMatches.head
   }
 
-  class EvilWord(length: Int, strategy:EvilWordChooser) extends TargetWord {
+  class EvilWord(length: Int, strategy: EvilWordChooser) extends TargetWord {
     private val guessesInOrder = mutable.ArrayBuffer.empty[Char]
     private val wordPool = new Random().shuffle((mutable.HashSet.empty ++= Words.loadAllWords.get(length).getOrElse {
       throw new RuntimeException(s"Invalid word length")
