@@ -56,15 +56,34 @@ object Server {
     override def isCorrect(char: Char): Boolean = target.exists(_.toLower == char.toLower)
   }
 
-  class EvilWord(length: Int) extends TargetWord {
+  private def display(word: String, visible: Set[Char]) = word.map { c =>
+    if (visible(c.toLower)) c else '_'
+  }.mkString
+
+  trait EvilWordChooser {
+    def mostEvilWord(pool: Traversable[String], guessesInOrder:List[Char], newGuess: Char):String
+
+  }
+
+  object SmartEvilWordChoooser extends EvilWordChooser {
+    override def mostEvilWord(pool: Traversable[String], guessesInOrder:List[Char], newGuess: Char): String =
+      val newRevealed = (mutable.HashSet.empty ++= guessesInOrder += newGuess).toSet
+      val allMatches = pool
+        .groupBy { candidate =>
+          display(candidate, newRevealed)
+        }
+        .maxBy { case (_, options) =>
+          options.minBy(_.toSet.count(e => !newRevealed(e)))
+        }._2.toList
+      allMatches.head
+  }
+
+  class EvilWord(length: Int, strategy:EvilWordChooser) extends TargetWord {
     private val guessesInOrder = mutable.ArrayBuffer.empty[Char]
     private val wordPool = new Random().shuffle((mutable.HashSet.empty ++= Words.loadAllWords.get(length).getOrElse {
       throw new RuntimeException(s"Invalid word length")
     }.toList))
 
-    private def display(word: String, visible: Set[Char]) = word.map { c =>
-      if (visible(c.toLower)) c else '_'
-    }.mkString
 
     def debugGuess(c: Char) = {
       if (isCorrect(c)) {
@@ -77,15 +96,7 @@ object Server {
     }
 
     private def mostEvilWord(newGuess: Char): String =
-      val newRevealed = (mutable.HashSet.empty ++= guessesInOrder += newGuess).toSet
-      val allMatches = wordPool
-        .groupBy { candidate =>
-          display(candidate, newRevealed)
-        }
-        .maxBy { case (_, options) =>
-          options.minBy(_.toSet.count(e => !newRevealed(e)))
-        }._2.toList
-      allMatches.head
+      strategy.mostEvilWord(wordPool, guessesInOrder.toList, newGuess)
 
     private var lastPattern = "".padTo(length, '_')
 
@@ -161,7 +172,7 @@ object Server {
 
   class OpenGame(val players: ArrayBuffer[Player], val gameId: Int) {
     private var currentPlayer = Option.empty[Player]
-    private val targetWord = new EvilWord(Words.randomWordLength)
+    private val targetWord = new EvilWord(Words.randomWordLength, SmartEvilWordChoooser)
     private val state = new GameState(maxMoveCount, mutable.HashSet.empty, targetWord)
     if (targetWord.isCorrect(' ')) {
       targetWord.onCorrectGuess(' ')
